@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Display buildings in 3D</title>
+
+<!--Map api links-->
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+
+<!--Polygon js and css links-->
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.0/mapbox-gl-draw.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.0/mapbox-gl-draw.css" type="text/css">
+
+
+<style>
+    body { margin: 0; padding: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    #zoom-slider {
+        z-index: 9999; /* Set a high z-index value */
+        position: absolute;
+        top: 10px; /* Adjust the top position as needed */
+        left: -180px; /* Adjust the left position as needed */
+        width: 200px; /* Set the width of the vertical slider */
+        height: 10px; /* Set the height of the vertical slider */
+        transform: rotate(270deg); /* Rotate the slider to be vertical */
+        transform-origin: right top; /* Set the rotation origin to the top right corner */
+    }
+
+
+    .calculation-box {
+        height: 70px;
+        width: 75px;
+        position: absolute;
+        bottom: 40px;
+        left: 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        text-align: center;
+    }
+
+    p {
+        font-family: 'Open Sans';
+        margin: 0;
+        font-size: 10px;
+    }
+
+    #activate-marker-button {
+        position: absolute;
+        top: 180px;
+        right: 10px;
+        z-index: 10;
+    }
+    #delete-all-markers-button {
+        position: absolute;
+        top: 205px;
+        right: 10px;
+        z-index: 10;
+    }
+    .coordinates {
+        background: rgba(0, 0, 0, 0.5);
+        color: #fff;
+        position: absolute;
+        bottom: 40px;
+        left: 110px;
+        padding: 5px 10px;
+        margin: 0;
+        font-size: 11px;
+        line-height: 18px;
+        border-radius: 3px;
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+    <div id="map"></div>
+    <pre id="coordinates" class="coordinates"></pre>
+    <input type="range" id="zoom-slider" min="8" max="17" value="15">
+    <button id="activate-marker-button">Activate Marker</button>
+    <button id="delete-all-markers-button">Delete All Markers</button>
+    <div class="calculation-box">
+    <p>Click the map to draw a polygon.</p>
+
+    <div id="calculated-area"></div>
+    </div>
+
+
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoicmFtYWNoYW5kcmFuLWVkZ2Vmb3JjZSIsImEiOiJjbGtreXY0M28wOXAxM3JvZTVyZXU2ZWIzIn0.to7JY_0FnPjy33nSTWSR-g';
+                 const map = new mapboxgl.Map({
+                // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+                style: 'mapbox://styles/mapbox/satellite-streets-v12',
+               // center: [78.368, 17.43609], // starting position [lng, lat] Gachibowli
+               center: [-74.0066, 40.7135],
+                zoom: 15.5,
+                pitch: 45,
+                bearing: -17.6,
+                container: 'map',
+                antialias: true,
+                light: {
+                    anchor: 'viewport',
+                    color: 'white',
+                    intensity: 0.4
+                }
+            });
+            const slider = document.getElementById('zoom-slider');
+
+            slider.addEventListener('input', () => {
+                const zoomLevel = parseFloat(slider.value);
+                // Adjust the power of zoom here (you can change the exponent value)
+                // const zoomLevel = Math.pow(1.5, sliderValue - 10); // Exponent of 1.5
+                map.setZoom(zoomLevel);
+            });
+            // Add zoom and rotation controls to the map.
+            map.addControl(new mapboxgl.NavigationControl(slider));
+
+
+            map.on('style.load', () => {
+                // Insert the layer beneath any symbol layer.
+                const layers = map.getStyle().layers;
+                const labelLayerId = layers.find(
+                    (layer) => layer.type === 'symbol' && layer.layout['text-field']
+                ).id;
+
+                // The 'building' layer in the Mapbox Streets
+                // vector tileset contains building height data
+                // from OpenStreetMap.
+                map.addLayer(
+                    {
+                        'id': 'add-3d-buildings',
+                        'source': 'composite',
+                        'source-layer': 'building',
+                        'filter': ['==', 'extrude', 'true'],
+                        'type': 'fill-extrusion',
+                        'minzoom': 15,
+                        'paint': {
+                            'fill-extrusion-color': '#aaa',
+
+                            // Use an 'interpolate' expression to
+                            // add a smooth transition effect to
+                            // the buildings as the user zooms in.
+                            'fill-extrusion-height': [
+                                'interpolate',
+                                ['linear'],
+                                ['zoom'],
+                                15,
+                                0,
+                                15.05,
+                                ['get', 'height']
+                            ],
+                            'fill-extrusion-base': [
+                                'interpolate',
+                                ['linear'],
+                                ['zoom'],
+                                15,
+                                0,
+                                15.05,
+                                ['get', 'min_height']
+                            ],
+                            'fill-extrusion-opacity': 0.8
+                        }
+                    },
+                    labelLayerId
+                );
+            });
+
+
+            // Polygon functions
+
+            const draw = new MapboxDraw({
+                displayControlsDefault: false,
+                // Select which mapbox-gl-draw control buttons to add to the map.
+                controls: {
+                    polygon: true,
+                    trash: true
+            },
+            // Set mapbox-gl-draw to draw by default.
+            // The user does not have to click the polygon control button first.
+               // defaultMode: 'draw_polygon'
+            });
+                map.addControl(draw);
+
+                map.on('draw.create', updateArea);
+                map.on('draw.delete', updateArea);
+                map.on('draw.update', updateArea);
+
+            function updateArea(e) {
+                const data = draw.getAll();
+                const answer = document.getElementById('calculated-area');
+                if (data.features.length > 0) {
+                    const area = turf.area(data);
+                    // Restrict the area to 2 decimal points.
+                    const rounded_area = Math.round(area * 100) / 100;
+                    answer.innerHTML = `<p><strong>${rounded_area}</strong></p><p>square meters</p>`;
+                } else {
+                    answer.innerHTML = '';
+                    if (e.type !== 'draw.delete')
+                    alert('Click the map to draw a polygon.');
+                }
+            }
+
+        // Activate and Deactivate, delete markers
+
+        let markers = [];
+        let markerActivated = false;
+
+        const activateMarkerButton = document.getElementById('activate-marker-button');
+        const deleteAllMarkersButton = document.getElementById('delete-all-markers-button');
+
+        function addMarker(lngLat) {
+            const marker = new mapboxgl.Marker()
+                .setLngLat(lngLat)
+                .addTo(map);
+
+            const popup = new mapboxgl.Popup()
+                .setHTML(`Latitude: ${lngLat.lat.toFixed(2)}<br>Longitude: ${lngLat.lng.toFixed(2)}`);
+
+            marker.setPopup(popup);
+
+            marker.getElement().addEventListener('click', () => {
+                // When clicking on the marker, display latitude and longitude
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete Marker';
+                // When clicking on the marker, display the Popup
+                popup.addTo(map);
+                deleteButton.addEventListener('click', () => {
+                    marker.remove();
+                    markers = markers.filter((m) => m !== marker);
+                });
+
+                const container = document.createElement('div');
+                container.appendChild(deleteButton);
+                container.appendChild(document.createElement('br'));
+                container.appendChild(document.createTextNode(`Latitude: ${lngLat.lat.toFixed(2)}`));
+                container.appendChild(document.createElement('br'));
+                container.appendChild(document.createTextNode(`Longitude: ${lngLat.lng.toFixed(2)}`));
+
+                new mapboxgl.Popup()
+                    .setDOMContent(container)
+                    .setLngLat(lngLat)
+                    .addTo(map);
+
+                markers.push(marker);
+            });
+        }
+
+        activateMarkerButton.addEventListener('click', () => {
+            if (markerActivated) {
+                markerActivated = false;
+                activateMarkerButton.textContent = 'Activate Marker';
+            } else {
+                markerActivated = true;
+                activateMarkerButton.textContent = 'Deactivate Marker';
+
+                map.on('click', (e) => {
+                    if (markerActivated) {
+                        addMarker(e.lngLat);
+                    }
+                });
+            }
+        });
+
+        deleteAllMarkersButton.addEventListener('click', () => {
+            markers.forEach((marker) => marker.remove());
+            markers = [];
+        });
+
+
+
+    // Drag marker
+    const marker = new mapboxgl.Marker({
+    draggable: true
+    })
+    .setLngLat([-74.0066, 40.7135])
+    .addTo(map);
+
+    function onDragEnd() {
+        const lngLat = marker.getLngLat();
+        coordinates.style.display = 'block';
+        coordinates.innerHTML = `Longitude: ${lngLat.lng}<br />Latitude: ${lngLat.lat}`;
+    }
+
+    marker.on('dragend', onDragEnd);
+    </script>
+
+</body>
+</html>

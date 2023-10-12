@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>mapQml.qml</file>
+        <file>jquery.min.js</file>
+        <file>polymaps.js</file>
+        <file>map.html</file>
+        <file>map.js</file>
+        <file>example.css</file>
+        <file>mapbox.js</file>
+        <file>mapOverview.html</file>
+        <file>mergeMap.html</file>
+    </qresource>
+</RCC>

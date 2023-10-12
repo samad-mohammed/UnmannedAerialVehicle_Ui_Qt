@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Include necessary CSS and JavaScript libraries for Mapbox GL -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map1 { position: absolute; top: 0; bottom: 0; width: 50%; left: 0; }
+        #map2 { position: absolute; top: 0; bottom: 0; width: 50%; right: 0; }
+    </style>
+</head>
+<body>
+    <!-- Create two map containers -->
+    <div id="map1"></div>
+    <div id="map2"></div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoicmFtYWNoYW5kcmFuLWVkZ2Vmb3JjZSIsImEiOiJjbGtreXY0M28wOXAxM3JvZTVyZXU2ZWIzIn0.to7JY_0FnPjy33nSTWSR-g';
+
+        const map1 = new mapboxgl.Map({
+            container: 'map1',
+            style: 'mapbox://styles/mapbox/satellite-streets-v12',
+            center: [78.368, 17.43609],
+            zoom: 13
+        });
+
+        const map2 = new mapboxgl.Map({
+            container: 'map2',
+            style: 'mapbox://styles/mapbox/dark-v11',
+            center: [78.368, 17.43609],
+            zoom: 13
+        });
+
+        // Add a listener to map1 to sync its movements with map2
+        map1.on('move', () => {
+            const center = map1.getCenter();
+            const zoom = map1.getZoom();
+            map2.jumpTo({ center, zoom });
+        });
+
+        // Add a listener to map2 to sync its movements with map1
+        map2.on('move', () => {
+            const center = map2.getCenter();
+            const zoom = map2.getZoom();
+            map1.jumpTo({ center, zoom });
+        });
+    </script>
+</body>
+</html>
