@@ -206,17 +206,70 @@
       <double>180.000000000000000</double>
      </property>
     </widget>
+    <widget class="QGraphicsView" name="graphicsView">
+     <property name="geometry">
+      <rect>
+       <x>1210</x>
+       <y>310</y>
+       <width>311</width>
+       <height>192</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="loadPushButton">
+     <property name="geometry">
+      <rect>
+       <x>1240</x>
+       <y>510</y>
+       <width>80</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Show</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="clearPushButton">
+     <property name="geometry">
+      <rect>
+       <x>1370</x>
+       <y>510</y>
+       <width>80</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>PushButton</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="startCameraButton">
+     <property name="geometry">
+      <rect>
+       <x>1260</x>
+       <y>230</y>
+       <width>141</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Start Camera</string>
+     </property>
+    </widget>
     <zorder>PitchSpinBox</zorder>
     <zorder>RollSpinBox</zorder>
     <zorder>airSpeedIndicator</zorder>
     <zorder>AltitudeIndicator</zorder>
     <zorder>turnCoordinator</zorder>
     <zorder>UiQmlWidget</zorder>
+    <zorder>graphicsView</zorder>
+    <zorder>loadPushButton</zorder>
+    <zorder>clearPushButton</zorder>
+    <zorder>startCameraButton</zorder>
    </widget>
    <widget class="QQuickWidget" name="cameraView">
     <property name="geometry">
      <rect>
-      <x>1210</x>
+      <x>1205</x>
       <y>7</y>
       <width>315</width>
       <height>200</height>
@@ -330,30 +383,11 @@ background-color:blue ;
      <enum>QQuickWidget::SizeRootObjectToView</enum>
     </property>
    </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>1300</x>
-      <y>60</y>
-      <width>121</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>15</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>Camera Box</string>
-    </property>
-   </widget>
    <zorder>leftPanel</zorder>
    <zorder>frame</zorder>
    <zorder>gyro_EADI</zorder>
    <zorder>mapOverviewWidget</zorder>
    <zorder>cameraView</zorder>
-   <zorder>label</zorder>
   </widget>
  </widget>
  <customwidgets>

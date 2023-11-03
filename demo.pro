@@ -33,4 +33,8 @@ RESOURCES += \
 
 include(qfi/qfi.pri)
 
+DISTFILES += \
+    cameraFeed.py
+LIBS += -lpython3.12
+
 

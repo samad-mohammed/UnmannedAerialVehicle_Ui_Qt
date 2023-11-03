@@ -1,0 +1,190 @@
+/*
+// Activate and Deactivate, delete markers
+
+let markerActivated = false;
+
+const activateMarkerButton = document.getElementById('activate-marker-button');
+const deleteAllMarkersButton = document.getElementById('delete-all-markers-button');
+const deleteSelectedMarkerButton = document.getElementById('delete-selected-marker-button');
+let selectedMarker = null;
+let prevMarker = null; // Keep track of the previous marker
+
+function addMarker(lngLat) {
+    const marker = new mapboxgl.Marker()
+        .setLngLat(lngLat)
+        .addTo(map);
+
+    const popup = new mapboxgl.Popup()
+        .setHTML(`Latitude: ${lngLat.lat.toFixed(2)}<br>Longitude: ${lngLat.lng.toFixed(2)}`);
+
+    marker.setPopup(popup);
+
+    marker.getElement().addEventListener('click', () => {
+        if (selectedMarker === marker) {
+            // Clicked again, remove the marker
+            marker.remove();
+            selectedMarker = null;
+            deleteSelectedMarkerButton.style.display = 'darkgray'; // Hide the delete button
+            if (prevMarker) {
+                map.getSource('line-source').setData({
+                    type: 'FeatureCollection',
+                    features: []
+                });
+            }
+        } else {
+            // Clicked for the first time, select the marker
+            if (selectedMarker) {
+                selectedMarker.getElement().style.color = 'red'; // Revert color of the previously selected marker
+            }
+            selectedMarker = marker;
+            deleteSelectedMarkerButton.style.display = 'block'; // Show the delete button
+            if (prevMarker) {
+                // Create a line between the previous and current marker
+                createLine(prevMarker.getLngLat(), marker.getLngLat());
+            }
+            prevMarker = marker; // Update the previous marker
+        }
+        // Enable the delete button
+        deleteSelectedMarkerButton.removeAttribute('disabled');
+    });
+
+    markers.push(marker);
+}
+
+// Function to create a line between two points
+function createLine(coord1, coord2) {
+    const line = {
+        type: 'Feature',
+        geometry: {
+            type: 'LineString',
+            coordinates: [coord1, coord2]
+        }
+    };
+
+    map.getSource('line-source').setData(line);
+}
+
+activateMarkerButton.addEventListener('click', () => {
+    if (markerActivated) {
+        markerActivated = false;
+        activateMarkerButton.textContent = 'Activate Marker';
+    } else {
+        markerActivated = true;
+        activateMarkerButton.textContent = 'Deactivate Marker';
+
+        map.on('click', (e) => {
+            if (markerActivated) {
+                addMarker(e.lngLat);
+            }
+        });
+    }
+});
+
+deleteAllMarkersButton.addEventListener('click', () => {
+    markers.forEach((marker) => marker.remove());
+    markers = [];
+    if (selectedMarker) {
+        deleteSelectedMarkerButton.style.display = 'none'; // Hide the delete button when all markers are deleted
+        selectedMarker = null;
+        prevMarker = null;
+        map.getSource('line-source').setData({
+            type: 'FeatureCollection',
+            features: []
+        });
+    }
+});
+
+deleteSelectedMarkerButton.addEventListener('click', () => {
+    if (selectedMarker) {
+        selectedMarker.remove();
+        deleteSelectedMarkerButton.style.display = 'none'; // Hide the delete button
+        selectedMarker = null;
+        if (prevMarker) {
+            map.getSource('line-source').setData({
+                type: 'FeatureCollection',
+                features: []
+            });
+        }
+        prevMarker = null;
+    }
+});
+
+
+*/
+
+
+/*      // Activate and Deactivate, delete markers
+        let markers = [];
+        let markerActivated = false;
+
+        const activateMarkerButton = document.getElementById('activate-marker-button');
+        const deleteAllMarkersButton = document.getElementById('delete-all-markers-button');
+        const deleteSelectedMarkerButton = document.getElementById('delete-selected-marker-button');
+        let selectedMarker = null;
+
+        function addMarker(lngLat) {
+            const marker = new mapboxgl.Marker()
+                .setLngLat(lngLat)
+                .addTo(map);
+
+            const popup = new mapboxgl.Popup()
+                .setHTML(`Latitude: ${lngLat.lat.toFixed(2)}<br>Longitude: ${lngLat.lng.toFixed(2)}`);
+
+            marker.setPopup(popup);
+
+            marker.getElement().addEventListener('click', () => {
+
+                    // Clicked for the first time, select the marker
+                    if (selectedMarker) {
+                        selectedMarker.getElement().style.color = 'red'; // Revert color of the previously selected marker
+                    }
+                    selectedMarker = marker;
+                    marker.getElement().style.color = 'green'; // Change color to green
+                    deleteSelectedMarkerButton.style.display = 'block'; // Show the delete button
+
+                // Enable the delete button
+                document.getElementById('delete-selected-marker-button').removeAttribute('disabled');
+            });
+
+            markers.push(marker);
+
+        }
+
+        activateMarkerButton.addEventListener('click', () => {
+            if (markerActivated) {
+                markerActivated = false;
+                activateMarkerButton.textContent = '+';
+            } else {
+                markerActivated = true;
+                activateMarkerButton.textContent = 'Deactivate Marker';
+
+                map.on('click', (e) => {
+                    if (markerActivated) {
+                        addMarker(e.lngLat);
+                    }
+                });
+            }
+        });
+
+
+        deleteAllMarkersButton.addEventListener('click', () => {
+            markers.forEach((marker) => marker.remove());
+            markers = [];
+            if (selectedMarker) {
+                deleteSelectedMarkerButton.style.display = 'none'; // Hide the delete button when all markers are deleted
+                selectedMarker = null;
+            }
+        });
+
+
+        deleteSelectedMarkerButton.addEventListener('click', () => {
+
+            if (selectedMarker) {
+            deleteSelectedMarkerButton.style.backgroundColor = 'gray';
+                selectedMarker.remove();
+                deleteSelectedMarkerButton.style.backgroundColor = 'black'; // Hide the delete button
+                selectedMarker = null;
+            }
+        });
+
+*/

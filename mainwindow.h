@@ -27,6 +27,8 @@ public:
 
     void onLoadFinished(bool ok);
 
+
+    void startCamera();
 private:
     Ui::MainWindow *ui;
 
@@ -52,8 +54,14 @@ private:
     signed int accelerationZ;
 
 private slots:
+    void on_loadPushButton_clicked();
+
+
+
     void on_PitchSpinBox_valueChanged(double arg1);
     void on_RollSpinBox_valueChanged(double arg1);
+
+    void on_clearPushButton_clicked();
 
 };
 #endif // MAINWINDOW_H

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Display Image with JavaScript</title>
+</head>
+<body>
+    <div id="image-container"></div>
+
+    <script>
+        // Create a new Image element
+        const image = new Image();
+
+        // Set the source of the image
+        image.src = 'images/flight-icon.png'; // Replace with the correct path to your image
+
+        // Set additional styles if needed
+        image.style.maxWidth = '100%';
+        image.style.maxHeight = '100%';
+        image.style.filter = 'invert(100%)';
+
+        // Append the image to the document
+        document.getElementById('image-container').appendChild(image);
+    </script>
+</body>
+</html>

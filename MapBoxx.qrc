@@ -9,5 +9,17 @@
         <file>mapbox.js</file>
         <file>mapOverview.html</file>
         <file>mergeMap.html</file>
+        <file>images/line_string_icon.png</file>
+        <file>images/marker-blue.png</file>
+        <file>images/marker-pink.png</file>
+        <file>images/marker-red.png</file>
+        <file>images/marker-yellow.png</file>
+        <file>images/marker-icon.png</file>
+        <file>style.css</file>
+        <file>Calculations.txt</file>
+        <file>images/flight-icon.png</file>
+        <file>images/encoded-20231030100048.txt</file>
+        <file>images/airport-11.svg</file>
+        <file>cameraViewHTML.html</file>
     </qresource>
 </RCC>

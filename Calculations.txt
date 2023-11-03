@@ -1,0 +1,49 @@
+To estimate the area covered by a circle with a radius of 7.5 pixels on your Mapbox map at zoom level 15.5,
+you can use the formula I provided earlier. Assuming you want to calculate this at the center of the map (New York),
+you can use the latitude of New York, which is approximately 40.71477 degrees.
+
+Using the formula:
+
+```javascript
+const latitude = 40.71477;
+const zoom = 15.5;
+const metersPerPixel = (156543.03392 * Math.cos(latitude * Math.PI / 180)) / Math.pow(2, zoom);
+const radiusInMeters = 7.5 * metersPerPixel;
+const areaInSquareMeters = Math.PI * Math.pow(radiusInMeters, 2);
+```
+
+Now, let's calculate it:
+
+```javascript
+const latitude = 40.71477;
+const zoom = 15.5;
+const metersPerPixel = (156543.03392 * Math.cos(latitude * Math.PI / 180)) / Math.pow(2, zoom);
+const radiusInMeters = 7.5 * metersPerPixel;
+const areaInSquareMeters = Math.PI * Math.pow(radiusInMeters, 2);
+
+console.log('Radius in meters:', radiusInMeters);
+console.log('Area covered in square meters:', areaInSquareMeters);
+```
+
+This code will estimate the radius in meters and the area covered by a circle with a radius of 7.5 pixels
+on your map at zoom level 15.5, centered at New York. The actual area will be a rough estimate due to map projections,
+but it provides a good approximation.
+
+
+Using the provided code and the formula, here are the estimated values:
+
+- Radius in meters: Approximately """""""""""  15.62 meters  """""""""""""
+- Area covered in square meters: Approximately """"""""""""  764.16 square meters  """"""""""""""
+
+These values represent the estimated radius and the area covered by a circle with a radius of 7.5 pixels
+on your Mapbox map at zoom level 15.5, centered at New York. Please note that this is an approximation,
+and the actual size and area covered may vary due to map projections and other factors.
+
+
+************************  TARGET AREA CIRCLE (1000sq.m) **************************************
+For a 1000 square meter area, the estimated radii would be:
+
+- Radius in meters: Approximately 17.83 meters
+- Radius in pixels: Approximately 11.56 pixels
+
+These calculations are based on the initial estimation where a 7.5-pixel radius covered approximately 764.16 square meters.

@@ -7,6 +7,7 @@
 <!--Map api links-->
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.css" rel="stylesheet">
+<link href="style.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.14.1/mapbox-gl.js"></script>
 
 <!--Polygon js and css links-->
@@ -14,278 +15,766 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.0/mapbox-gl-draw.js"></script>
 <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.0/mapbox-gl-draw.css" type="text/css">
 
-
-<style>
-    body { margin: 0; padding: 0; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    #zoom-slider {
-        z-index: 9999; /* Set a high z-index value */
-        position: absolute;
-        top: 10px; /* Adjust the top position as needed */
-        left: -180px; /* Adjust the left position as needed */
-        width: 200px; /* Set the width of the vertical slider */
-        height: 10px; /* Set the height of the vertical slider */
-        transform: rotate(270deg); /* Rotate the slider to be vertical */
-        transform-origin: right top; /* Set the rotation origin to the top right corner */
-    }
-
-
-    .calculation-box {
-        height: 70px;
-        width: 75px;
-        position: absolute;
-        bottom: 40px;
-        left: 10px;
-        background-color: rgba(255, 255, 255, 0.9);
-        padding: 10px;
-        text-align: center;
-    }
-
-    p {
-        font-family: 'Open Sans';
-        margin: 0;
-        font-size: 10px;
-    }
-
-    #activate-marker-button {
-        position: absolute;
-        top: 180px;
-        right: 10px;
-        z-index: 10;
-    }
-    #delete-all-markers-button {
-        position: absolute;
-        top: 205px;
-        right: 10px;
-        z-index: 10;
-    }
-    .coordinates {
-        background: rgba(0, 0, 0, 0.5);
-        color: #fff;
-        position: absolute;
-        bottom: 40px;
-        left: 110px;
-        padding: 5px 10px;
-        margin: 0;
-        font-size: 11px;
-        line-height: 18px;
-        border-radius: 3px;
-        display: none;
-    }
-</style>
 </head>
 <body>
 
     <div id="map"></div>
+    <div id="distance" class="distance-container"></div>
     <pre id="coordinates" class="coordinates"></pre>
     <input type="range" id="zoom-slider" min="8" max="17" value="15">
-    <button id="activate-marker-button">Activate Marker</button>
-    <button id="delete-all-markers-button">Delete All Markers</button>
+
+    <button id="draw-line" class="toggle-button">
+        <img src="/images/line_string_icon.png" alt="Toggle Drawing">
+    </button>
+    <div id="draw-line-name" class="tool-name">Draw Line Tool</div>
+
+    <button id="marker-drop" class="toggle-button">
+        <img src="/images/marker-icon.png" alt="Toggle Drawing">
+
+    </button>
+    <div id="marker-drop-name" class="tool-name">Marker Tool</div>
+
     <div class="calculation-box">
     <p>Click the map to draw a polygon.</p>
 
     <div id="calculated-area"></div>
     </div>
 
+<!--<button id="airButton">CLICK ME AIR</button>-->
+<div class="overlay">
+<button id="replay">Replay</button>
+</div>
 
 
-    <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoicmFtYWNoYW5kcmFuLWVkZ2Vmb3JjZSIsImEiOiJjbGtreXY0M28wOXAxM3JvZTVyZXU2ZWIzIn0.to7JY_0FnPjy33nSTWSR-g';
-                 const map = new mapboxgl.Map({
-                // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-                style: 'mapbox://styles/mapbox/satellite-streets-v12',
-               // center: [78.368, 17.43609], // starting position [lng, lat] Gachibowli
-               center: [-74.0066, 40.7135],
-                zoom: 15.5,
-                pitch: 45,
-                bearing: -17.6,
-                container: 'map',
-                antialias: true,
-                light: {
-                    anchor: 'viewport',
-                    color: 'white',
-                    intensity: 0.4
-                }
-            });
-            const slider = document.getElementById('zoom-slider');
+<script>
+// ---------    MAP    -------------
 
-            slider.addEventListener('input', () => {
-                const zoomLevel = parseFloat(slider.value);
-                // Adjust the power of zoom here (you can change the exponent value)
-                // const zoomLevel = Math.pow(1.5, sliderValue - 10); // Exponent of 1.5
-                map.setZoom(zoomLevel);
-            });
-            // Add zoom and rotation controls to the map.
-            map.addControl(new mapboxgl.NavigationControl(slider));
+mapboxgl.accessToken = 'pk.eyJ1IjoicmFtYWNoYW5kcmFuLWVkZ2Vmb3JjZSIsImEiOiJjbGtreXY0M28wOXAxM3JvZTVyZXU2ZWIzIn0.to7JY_0FnPjy33nSTWSR-g';
+    const map = new mapboxgl.Map({
+    // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
 
+   // center: [78.368, 17.43609], // starting position [lng, lat] Gachibowli
+   //center: [55.2744, 25.1972], //Dubai
 
-            map.on('style.load', () => {
-                // Insert the layer beneath any symbol layer.
-                const layers = map.getStyle().layers;
-                const labelLayerId = layers.find(
-                    (layer) => layer.type === 'symbol' && layer.layout['text-field']
-                ).id;
+   center: [-74.001435, 40.71477], // new york
 
-                // The 'building' layer in the Mapbox Streets
-                // vector tileset contains building height data
-                // from OpenStreetMap.
-                map.addLayer(
-                    {
-                        'id': 'add-3d-buildings',
-                        'source': 'composite',
-                        'source-layer': 'building',
-                        'filter': ['==', 'extrude', 'true'],
-                        'type': 'fill-extrusion',
-                        'minzoom': 15,
-                        'paint': {
-                            'fill-extrusion-color': '#aaa',
+    zoom: 15.5,
+    pitch: 55,
+    //bearing: -17.6,
+    container: 'map',
+    antialias: true,
+    /*center: [-96, 37.8],
+    zoom: 3,
+    pitch: 40*/
+});
 
-                            // Use an 'interpolate' expression to
-                            // add a smooth transition effect to
-                            // the buildings as the user zooms in.
-                            'fill-extrusion-height': [
-                                'interpolate',
-                                ['linear'],
-                                ['zoom'],
-                                15,
-                                0,
-                                15.05,
-                                ['get', 'height']
-                            ],
-                            'fill-extrusion-base': [
-                                'interpolate',
-                                ['linear'],
-                                ['zoom'],
-                                15,
-                                0,
-                                15.05,
-                                ['get', 'min_height']
-                            ],
-                            'fill-extrusion-opacity': 0.8
-                        }
-                    },
-                    labelLayerId
-                );
-            });
+map.on('click', function (e) {
+    // Your code to handle the click event goes here
 
-
-            // Polygon functions
-
-            const draw = new MapboxDraw({
-                displayControlsDefault: false,
-                // Select which mapbox-gl-draw control buttons to add to the map.
-                controls: {
-                    polygon: true,
-                    trash: true
-            },
-            // Set mapbox-gl-draw to draw by default.
-            // The user does not have to click the polygon control button first.
-               // defaultMode: 'draw_polygon'
-            });
-                map.addControl(draw);
-
-                map.on('draw.create', updateArea);
-                map.on('draw.delete', updateArea);
-                map.on('draw.update', updateArea);
-
-            function updateArea(e) {
-                const data = draw.getAll();
-                const answer = document.getElementById('calculated-area');
-                if (data.features.length > 0) {
-                    const area = turf.area(data);
-                    // Restrict the area to 2 decimal points.
-                    const rounded_area = Math.round(area * 100) / 100;
-                    answer.innerHTML = `<p><strong>${rounded_area}</strong></p><p>square meters</p>`;
-                } else {
-                    answer.innerHTML = '';
-                    if (e.type !== 'draw.delete')
-                    alert('Click the map to draw a polygon.');
+    // For example, you can add a layer on the clicked location
+    map.addLayer({
+        'id': 'point',
+        'source': {
+            type: 'geojson',
+            data: {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [e.lngLat.lng, e.lngLat.lat] // Use the clicked coordinates
                 }
             }
+        },
+        'type': 'symbol',
+        'layout': {
+            'icon-image': 'airport',
+            'icon-size': 3,
+            'icon-rotate': ['get', 'bearing'],
+            'icon-rotation-alignment': 'map',
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-pitch-alignment': 'map', // Set the pitch alignment to 'map'
 
-        // Activate and Deactivate, delete markers
-
-        let markers = [];
-        let markerActivated = false;
-
-        const activateMarkerButton = document.getElementById('activate-marker-button');
-        const deleteAllMarkersButton = document.getElementById('delete-all-markers-button');
-
-        function addMarker(lngLat) {
-            const marker = new mapboxgl.Marker()
-                .setLngLat(lngLat)
-                .addTo(map);
-
-            const popup = new mapboxgl.Popup()
-                .setHTML(`Latitude: ${lngLat.lat.toFixed(2)}<br>Longitude: ${lngLat.lng.toFixed(2)}`);
-
-            marker.setPopup(popup);
-
-            marker.getElement().addEventListener('click', () => {
-                // When clicking on the marker, display latitude and longitude
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'Delete Marker';
-                // When clicking on the marker, display the Popup
-                popup.addTo(map);
-                deleteButton.addEventListener('click', () => {
-                    marker.remove();
-                    markers = markers.filter((m) => m !== marker);
-                });
-
-                const container = document.createElement('div');
-                container.appendChild(deleteButton);
-                container.appendChild(document.createElement('br'));
-                container.appendChild(document.createTextNode(`Latitude: ${lngLat.lat.toFixed(2)}`));
-                container.appendChild(document.createElement('br'));
-                container.appendChild(document.createTextNode(`Longitude: ${lngLat.lng.toFixed(2)}`));
-
-                new mapboxgl.Popup()
-                    .setDOMContent(container)
-                    .setLngLat(lngLat)
-                    .addTo(map);
-
-                markers.push(marker);
-            });
         }
+    });
+});
+/*
+// San Francisco
+const origin = [-122.414, 37.776];
 
-        activateMarkerButton.addEventListener('click', () => {
-            if (markerActivated) {
-                markerActivated = false;
-                activateMarkerButton.textContent = 'Activate Marker';
-            } else {
-                markerActivated = true;
-                activateMarkerButton.textContent = 'Deactivate Marker';
+// Washington DC
+const destination = [-77.032, 38.913];
 
-                map.on('click', (e) => {
-                    if (markerActivated) {
-                        addMarker(e.lngLat);
-                    }
-                });
+// A simple line from origin to destination.
+const route = {
+'type': 'FeatureCollection',
+'features': [
+{
+'type': 'Feature',
+'geometry': {
+'type': 'LineString',
+'coordinates': [origin, destination]
+}
+}
+]
+};
+
+// A single point that animates along the route.
+// Coordinates are initially set to origin.
+const point = {
+'type': 'FeatureCollection',
+'features': [
+{
+'type': 'Feature',
+'properties': {},
+'geometry': {
+'type': 'Point',
+'coordinates': origin
+}
+}
+]
+};
+
+// Calculate the distance in kilometers between route start/end point.
+const lineDistance = turf.length(route.features[0]);
+
+const arc = [];
+
+// Number of steps to use in the arc and animation, more steps means
+// a smoother arc and animation, but too many steps will result in a
+// low frame rate
+const steps = 500;
+
+// Draw an arc between the `origin` & `destination` of the two points
+for (let i = 0; i < lineDistance; i += lineDistance / steps) {
+const segment = turf.along(route.features[0], i);
+arc.push(segment.geometry.coordinates);
+}
+
+// Update the route with calculated arc coordinates
+route.features[0].geometry.coordinates = arc;
+
+// Used to increment the value of the point measurement against the route.
+let counter = 0;
+
+map.on('load', () => {
+// Add a source and layer displaying a point which will be animated in a circle.
+map.addSource('route', {
+'type': 'geojson',
+'data': route
+});
+
+map.addSource('point', {
+'type': 'geojson',
+'data': point
+});
+
+map.addLayer({
+'id': 'route',
+'source': 'route',
+'type': 'line',
+'paint': {
+'line-width': 2,
+'line-color': '#007cbf'
+}
+});
+
+map.addLayer({
+'id': 'point',
+'source': 'point',
+'type': 'symbol',
+'layout': {
+// This icon is a part of the Mapbox Streets style.
+// To view all images available in a Mapbox style, open
+// the style in Mapbox Studio and click the "Images" tab.
+// To add a new image to the style at runtime see
+// https://docs.mapbox.com/mapbox-gl-js/example/add-image/
+'icon-image': 'airport',
+'icon-size': 1.5,
+'icon-rotate': ['get', 'bearing'],
+'icon-rotation-alignment': 'map',
+'icon-allow-overlap': true,
+'icon-ignore-placement': true
+}
+});
+let running = false;
+function animate() {
+running = true;
+document.getElementById('replay').disabled = true;
+const start =
+route.features[0].geometry.coordinates[
+counter >= steps ? counter - 1 : counter
+];
+const end =
+route.features[0].geometry.coordinates[
+counter >= steps ? counter : counter + 1
+];
+if (!start || !end) {
+running = false;
+document.getElementById('replay').disabled = false;
+return;
+}
+// Update point geometry to a new position based on counter denoting
+// the index to access the arc
+point.features[0].geometry.coordinates =
+route.features[0].geometry.coordinates[counter];
+
+// Calculate the bearing to ensure the icon is rotated to match the route arc
+// The bearing is calculated between the current point and the next point, except
+// at the end of the arc, which uses the previous point and the current point
+point.features[0].properties.bearing = turf.bearing(
+turf.point(start),
+turf.point(end)
+);
+
+// Update the source with this new data
+map.getSource('point').setData(point);
+
+// Request the next frame of animation as long as the end has not been reached
+if (counter < steps) {
+requestAnimationFrame(animate);
+}
+
+counter = counter + 1;
+}
+
+document.getElementById('replay').addEventListener('click', () => {
+if (running) {
+void 0;
+} else {
+// Set the coordinates of the original point back to origin
+point.features[0].geometry.coordinates = origin;
+
+// Update the source layer
+map.getSource('point').setData(point);
+
+// Reset the counter
+counter = 0;
+
+// Restart the animation
+animate(counter);
+}
+});
+
+// Start the animation
+animate(counter);
+});
+*/
+/*
+// --------- Rotate Map -----------------
+
+function rotateCamera(timestamp) {
+// clamp the rotation between 0 -360 degrees
+// Divide timestamp by 100 to slow rotation to ~10 degrees / sec
+map.rotateTo((timestamp / 360) % 360, { duration: 0 });
+// Request the next frame of the animation.
+requestAnimationFrame(rotateCamera);
+}
+*/
+
+// ---------   MAP 3D VIEW    -------------
+
+map.on('style.load', () => {
+
+// Start the animation.
+//rotateCamera(0);
+
+    // Insert the layer beneath any symbol layer.
+    const layers = map.getStyle().layers;
+
+     //Adding names to places
+    const labelLayerId = layers.find(
+        (layer) => layer.type === 'symbol' && layer.layout['text-field']
+    ).id;
+
+
+    // The 'building' layer in the Mapbox Streets
+    // vector tileset contains building height data
+    // from OpenStreetMap.
+    map.addLayer(
+        {
+            'id': 'add-3d-buildings',
+            'source': 'composite',
+            'source-layer': 'building',
+            'filter': ['==', 'extrude', 'true'],
+            'type': 'fill-extrusion',
+            'minzoom': 15,
+            'paint': {
+                'fill-extrusion-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'height'],
+                    0, 'rgba(211, 211, 211, 0.7)',  // Light gray
+                    30, 'rgba(173, 216, 230, 0.7)', // Sky blue
+                    60, 'rgba(255, 255, 153, 0.7)'  // Baby yellow
+                ],
+
+                // Use an 'interpolate' expression to
+                // add a smooth transition effect to
+                // the buildings as the user zooms in.
+                'fill-extrusion-height': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    15,
+                    0,
+                    15.05,
+                    ['get', 'height']
+                ],
+                'fill-extrusion-base': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    15,
+                    0,
+                    15.05,
+                    ['get', 'min_height']
+                ],
+                'fill-extrusion-opacity': 0.8
             }
-        });
-
-        deleteAllMarkersButton.addEventListener('click', () => {
-            markers.forEach((marker) => marker.remove());
-            markers = [];
-        });
+        },
+        labelLayerId
+    );
+});
 
 
+// ---------   ZOOM SLIDER    -------------
 
-    // Drag marker
-    const marker = new mapboxgl.Marker({
-    draggable: true
-    })
-    .setLngLat([-74.0066, 40.7135])
-    .addTo(map);
+const slider = document.getElementById('zoom-slider');
 
-    function onDragEnd() {
-        const lngLat = marker.getLngLat();
-        coordinates.style.display = 'block';
-        coordinates.innerHTML = `Longitude: ${lngLat.lng}<br />Latitude: ${lngLat.lat}`;
+slider.addEventListener('input', () => {
+    const zoomLevel = parseFloat(slider.value);
+    // Adjust the power of zoom here (you can change the exponent value)
+    // const zoomLevel = Math.pow(1.5, sliderValue - 10); // Exponent of 1.5
+    map.setZoom(zoomLevel);
+});
+// Add zoom and rotation controls to the map.
+map.addControl(new mapboxgl.NavigationControl(slider));
+
+
+
+
+// ---------   DRAW POLYGON & calculate AREA    -------------
+
+const markers = [];
+const draw = new MapboxDraw({
+  displayControlsDefault: false,
+  controls: {
+    polygon: true,
+    trash: true,
+
+  },
+});
+map.addControl(draw);
+map.on('draw.create', updateArea);
+map.on('draw.delete', updateArea);  // Handle deletion of features
+map.on('draw.update', updateArea);  // Handle updates to existing features
+
+function updateArea(e) {
+    const data = draw.getAll();
+    const answer = document.getElementById('calculated-area');
+    if (data.features.length > 0) {
+        const area = turf.area(data);
+        // Restrict the area to 2 decimal points.
+        const rounded_area = Math.round(area * 100) / 100;
+        answer.innerHTML = `<p><strong>${rounded_area}</strong></p><p>square meters</p>`;
+    } else {
+        answer.innerHTML = '';
+        if (e.type !== 'draw.delete')
+        alert('Click the map to draw a polygon.');
+    }
+}
+// ---------- *****************************---------------------
+
+
+//-----------------------------------------------------------------
+
+// --------- * * *   LINE_STRING / DRAW LINE   * * * -------------
+
+const distanceContainer = document.getElementById('distance');
+const toggleDrawingButton = document.getElementById('draw-line');
+let drawingEnabled = false; // Initially, drawing is disabled
+
+// GeoJSON object to hold our measurement features
+const geojson = {
+  'type': 'FeatureCollection',
+  'features': []
+};
+
+// Used to draw a line between points
+const linestring = {
+  'type': 'Feature',
+  'geometry': {
+    'type': 'LineString',
+    'coordinates': []
+  }
+};
+
+toggleDrawingButton.addEventListener('click', () => {
+  // Toggle the drawing state
+  drawingEnabled = !drawingEnabled;
+
+  if (drawingEnabled) {
+    enableDrawing();
+    toggleDrawingButton.style.backgroundColor = '#B0B0B0';
+    toggleDrawingButton.s
+  } else {
+    disableDrawing();
+    toggleDrawingButton.style.backgroundColor = '#FFFFFF';
+  }
+});
+
+/*map.on('load', () => {
+  map.addSource('geojson', {
+    'type': 'geojson',
+    'data': geojson
+  });
+
+
+
+  // Add styles to the map
+  map.addLayer({
+    id: 'measure-points',
+    type: 'circle',
+    source: 'geojson',
+    paint: {
+      'circle-radius': 5,
+      'circle-color': '#000066'
+    },
+    filter: ['in', '$type', 'Point']
+  });
+
+
+
+  map.addLayer({
+    id: 'measure-lines',
+    type: 'line',
+    source: 'geojson',
+    layout: {
+      'line-cap': 'round',
+      'line-join': 'round'
+    },
+    paint: {
+      'line-color': '#0033FF',
+      'line-width': 5.5
+    },
+    filter: ['in', '$type', 'LineString']
+  });
+});
+*/
+
+const size = 200;
+
+// This implements `StyleImageInterface`
+// to draw a pulsing dot icon on the map.
+const pulsingDot = {
+    width: size,
+    height: size,
+    data: new Uint8Array(size * size * 4),
+
+    // When the layer is added to the map,
+    // get the rendering context for the map canvas.
+    onAdd: function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = this.width;
+        canvas.height = this.height;
+        this.context = canvas.getContext('2d');
+    },
+
+    // Call once before every frame where the icon will be used.
+    render: function () {
+        const duration = 1000;
+        const t = (performance.now() % duration) / duration;
+
+        const radius = (size / 3.75) * 0.3;
+        const outerRadius = (size / 2) * 0.7 * t + radius;
+        const context = this.context;
+
+        // Draw the outer circle.
+        context.clearRect(0, 0, this.width, this.height);
+        context.beginPath();
+        context.arc(
+            this.width / 2,
+            this.height / 2,
+            outerRadius,
+            0,
+            Math.PI * 2
+        );
+        context.fillStyle = `rgba(255, 200, 200, ${1 - t})`;
+        context.fill();
+
+        // Draw the inner circle.
+        context.beginPath();
+        context.arc(
+            this.width / 2,
+            this.height / 2,
+            radius,
+            0,
+            Math.PI * 2
+        );
+        context.fillStyle = 'rgba(255, 100, 100, 1)';
+        context.strokeStyle = 'white';
+        context.lineWidth = 2 + 4 * (1 - t);
+        context.fill();
+        context.stroke();
+
+        // Update this image's data with data from the canvas.
+        this.data = context.getImageData(
+            0,
+            0,
+            this.width,
+            this.height
+        ).data;
+
+        // Continuously repaint the map, resulting
+        // in the smooth animation of the dot.
+        map.triggerRepaint();
+
+        // Return `true` to let the map know that the image was updated.
+        return true;
+    }
+};
+
+
+map.on('load', () => {
+
+    map.addImage('pulsing-dot', pulsingDot, { pixelRatio: 2 }); // Add the pulsing dot image
+
+    map.addSource('geojson', {
+        'type': 'geojson',
+        'data': geojson
+    });
+
+    map.addLayer({
+        id: 'measure-points',
+        type: 'symbol', // Change to symbol type
+        source: 'geojson',
+        layout: {
+            'icon-image': 'pulsing-dot', // Set the icon image to 'pulsing-dot'
+            'icon-size': 1, // You can adjust the size if needed
+        },
+        filter: ['in', '$type', 'Point']
+    });
+
+    map.addLayer({
+        id: 'measure-lines',
+        type: 'line',
+        source: 'geojson',
+        layout: {
+            'line-cap': 'round',
+            'line-join': 'round'
+        },
+        paint: {
+            'line-color': '#FF3366',
+            'line-width': 5.5
+        },
+        filter: ['in', '$type', 'LineString']
+    });
+});
+
+function addPoint(e) {
+  if (drawingEnabled) {
+    // Your existing addPoint logic here
+    const features = map.queryRenderedFeatures(e.point, {
+      layers: ['measure-points']
+    });
+
+    // Remove the linestring from the group
+    // so we can redraw it based on the points collection.
+    if (geojson.features.length > 1) geojson.features.pop();
+
+    // Clear the distance container to populate it with a new value.
+    distanceContainer.innerHTML = '';
+
+    // If a feature was clicked, remove it from the map.
+    if (features.length) {
+      const id = features[0].properties.id;
+      geojson.features = geojson.features.filter(
+        (point) => point.properties.id !== id
+      );
+    } else {
+      const point = {
+        'type': 'Feature',
+        'geometry': {
+          'type': 'Point',
+          'coordinates': [e.lngLat.lng, e.lngLat.lat]
+        },
+        'properties': {
+          'id': String(new Date().getTime())
+        }
+      };
+
+      geojson.features.push(point);
     }
 
-    marker.on('dragend', onDragEnd);
-    </script>
+    if (geojson.features.length > 1) {
+      linestring.geometry.coordinates = geojson.features.map(
+        (point) => point.geometry.coordinates
+      );
+
+      geojson.features.push(linestring);
+
+      // Populate the distanceContainer with total distance
+      const value = document.createElement('pre');
+      const distance = turf.length(linestring);
+      value.textContent = `Total distance: ${distance.toLocaleString()}km`;
+      distanceContainer.appendChild(value);
+    }
+
+    map.getSource('geojson').setData(geojson);
+  }
+}
+
+
+function enableDrawing() {
+  map.on('click', addPoint);
+}
+
+function disableDrawing() {
+  map.off('click', addPoint);
+}
+
+map.on('mousemove', (e) => {
+  if (drawingEnabled) {
+    // Your existing mousemove logic here
+    const features = map.queryRenderedFeatures(e.point, {
+      layers: ['measure-points']
+    });
+    map.getCanvas().style.cursor = features.length ? 'pointer' : 'crosshair';
+  }
+});
+
+
+// ----->    BUTTON NAME display    <-----
+
+const drawLineButton = document.getElementById('draw-line');
+const drawLineName = document.getElementById('draw-line-name');
+
+drawLineButton.addEventListener('mouseover', () => {
+  drawLineName.style.display = 'block';
+});
+
+drawLineButton.addEventListener('mouseout', () => {
+  drawLineName.style.display = 'none';
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (drawLineName.style.display === 'block') {
+    const offsetX = -70; // Adjust the horizontal offset
+    const offsetY = 10; // Adjust the vertical offset
+    const top = e.clientY + offsetY;
+    const left = e.clientX + offsetX;
+
+
+    drawLineName.style.top = top + 'px';
+    drawLineName.style.left = left + 'px';
+  }
+});
+
+
+// ------------------- * * * MARKER dropping * * * --------------------
+
+let markerActivated = false;
+let selectedMarker = null;
+
+const activateMarkerButton = document.getElementById('marker-drop');
+
+function addMarker(lngLat) {
+  if (!selectedMarker) {
+    const marker = new mapboxgl.Marker({ color: 'red'})
+      .setLngLat(lngLat)
+      .addTo(map);
+
+    marker.getElement().addEventListener('click', () => {
+      if (selectedMarker === marker) {
+        marker.remove();
+        selectedMarker = null;
+      } else {
+        selectedMarker = marker;
+        const coordinates = marker.getLngLat();
+        /*const popup = new mapboxgl.Popup()
+          .setHTML(`Latitude: ${coordinates.lat.toFixed(2)}<br>Longitude: ${coordinates.lng.toFixed(2)}`);*/
+          const popup = new mapboxgl.Popup()
+            .setHTML(`Latitude: ${coordinates.lat}<br>Longitude: ${coordinates.lng}`);
+        marker.setPopup(popup);
+        popup.addTo(map);
+      }
+    });
+
+    activateMarkerButton.style.backgroundColor = '#FFFFFF';
+    map.getCanvas().style.cursor = ''; // Reset the cursor
+    markerActivated = false;
+  }
+}
+
+activateMarkerButton.addEventListener('click', () => {
+  if (!markerActivated) {
+    markerActivated = true;
+    activateMarkerButton.style.backgroundColor = '#B0B0B0';
+    activateMarkerButton.classList.add('clicked'); // Add the "clicked" class to change the icon color
+    map.getCanvas().style.cursor = 'crosshair'; // Change cursor to crosshair
+  } else {
+    markerActivated = false;
+    activateMarkerButton.style.backgroundColor = '#FFFFFF';
+    activateMarkerButton.classList.remove('clicked'); // Remove the "clicked" class;
+    map.getCanvas().style.cursor = ''; // Reset the cursor
+  }
+});
+
+map.on('click', (e) => {
+  if (markerActivated) {
+    addMarker(e.lngLat);
+  }
+});
+
+
+// ----->    BUTTON NAME display    <-----
+
+const markerButtonName = document.getElementById('marker-drop-name');
+
+activateMarkerButton.addEventListener('mouseover', () => {
+  markerButtonName.style.display = 'block';
+});
+
+activateMarkerButton.addEventListener('mouseout', () => {
+  markerButtonName.style.display = 'none';
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (markerButtonName.style.display === 'block') {
+    const offsetX = -70; // Adjust the horizontal offset
+    const offsetY = 10; // Adjust the vertical offset
+    const top = e.clientY + offsetY;
+    const left = e.clientX + offsetX;
+
+
+    markerButtonName.style.top = top + 'px';
+    markerButtonName.style.left = left + 'px';
+  }
+});
+
+// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// ---------- * * * * * * * * * * ------------------ * * * * * * ---------------------------
+
+
+// Drag marker
+const marker = new mapboxgl.Marker({
+draggable: true
+})
+.setLngLat([101.7116, 3.1575])
+.addTo(map);
+
+function onDragEnd() {
+    const lngLat = marker.getLngLat();
+    coordinates.style.display = 'block';
+    coordinates.innerHTML = `Longitude: ${lngLat.lng}<br />Latitude: ${lngLat.lat}`;
+}
+
+marker.on('dragend', onDragEnd);
+/*
+const allImages = map.listImages();
+console.log(allImages);*/
+</script>
 
 </body>
 </html>

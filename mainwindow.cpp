@@ -9,7 +9,12 @@
 #include<QMessageBox>
 
 
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QGraphicsPixmapItem>
+#include <QPixmap>
 
+#include <QProcess>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -21,6 +26,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->UiQmlWidget->setSource(QUrl(QStringLiteral("qrc:/mapQml.qml")));
     ui->UiQmlWidget->show();
 
+    // Connect the button's clicked signal to the slot
+    connect(ui->startCameraButton, &QPushButton::clicked, this, &MainWindow::startCamera);
+
+
     // Create a QWebEngineView
     QWebEngineView* mapOverviewView = new QWebEngineView(ui->mapOverviewWidget);
 
@@ -29,6 +38,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Load the HTML file into the view
     mapOverviewView->setUrl(QUrl("qrc:/mapOverview.html"));
+
+    /*   QWebEngineView* camView = new QWebEngineView(ui->cameraView);
+
+    camView->setFixedWidth(315);
+    camView->setFixedHeight(200);
+
+    // Load the HTML file into the view
+    camView->setUrl(QUrl("qrc:/cameraViewHTML.html"));*/
 
      serialPort = new QSerialPort(this);
 
@@ -67,8 +84,72 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+//-------------------------------------------------------------------------------------
 
 
+void MainWindow::startCamera()
+{
+    QProcess process;
+    process.start("python3", QStringList() << "cameraFeed.py");
+    process.waitForFinished();
+}
+
+//--------------------------------------------------------------------------------------
+
+void MainWindow::on_loadPushButton_clicked()
+{
+    /* QString filename = QFileDialog::getOpenFileName(this,
+                                                    tr("Load Image"),
+                                                    mResourceDir,
+                                                    tr("Images (*.png *.jpg)"));*/
+    QString filename = "../marker-icons/flight-icon.png";
+
+    if (filename.isEmpty())  {
+         return;
+    }
+
+    QPixmap p(filename);
+
+    /*
+#ifdef DEBUG
+    qDebug() << "File: " << filename;
+    qDebug() << "Depth: " << p.depth();
+    qDebug() << "Width: " << p.width();
+    qDebug() << "Height: " << p.height();
+    qDebug() << "alpha: " << p.hasAlphaChannel();
+#endif
+*/
+    if (! ui->graphicsView->scene()) {
+         //qDebug() << "No Scene!";
+
+         QGraphicsScene *scene = new QGraphicsScene(this);
+         ui->graphicsView->setScene(scene);
+    }
+    QGraphicsScene *scene = ui->graphicsView->scene();
+    QGraphicsPixmapItem *pixmapItem = scene->addPixmap(p);
+
+    // Calculate the scale factors to fit the image within the view
+    qreal viewWidth = ui->graphicsView->width();
+    qreal viewHeight = ui->graphicsView->height();
+    qreal imageWidth = p.width();
+    qreal imageHeight = p.height();
+
+    qreal scaleX = viewWidth / imageWidth;
+    qreal scaleY = viewHeight / imageHeight;
+
+    // Set the scale factors to fit the image within the view
+    qreal scaleFactor = qMin(scaleX, scaleY);
+    pixmapItem->setScale(scaleFactor);
+
+    // Center the image in the view
+    ui->graphicsView->centerOn(pixmapItem);
+    // Set the background color to dark gray
+    ui->graphicsView->setBackgroundBrush(QBrush(QColor(5, 2, 36))); // RGB values for dark gray
+}
+
+
+
+//--------------------------------------------------------------------------------------
 void MainWindow::onLoadFinished(bool ok)
 {
     if (!ok) {
@@ -157,4 +238,14 @@ void MainWindow::readData()
 
     }
 }
+
+
+void MainWindow::on_clearPushButton_clicked()
+{
+    if (ui->graphicsView->scene()) {
+        ui->graphicsView->scene()->clear();
+    }
+}
+
+
 
